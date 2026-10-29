@@ -170,10 +170,9 @@
     const sugeridos = JSON.parse(localStorage.getItem("pontosSugeridos") || "[]");
     const mapa = L.map("mapa-leaflet").setView(SEDE, 12);
     
-    // CORREÇÃO DEFINITIVA APLICADA: Utilização da camada Wikimedia Maps (sem exigência de chave de API)
-    L.tileLayer("https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}{r}.png", {
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors & Wikimedia'
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(mapa);
 
     const camada = L.layerGroup().addTo(mapa);
