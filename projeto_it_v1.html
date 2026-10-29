@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Consultoria Circular — Cultura, coleta e captação em São Paulo</title>
+  <meta name="description" content="Plataforma extensionista de consultoria gratuita para coletivos culturais, com orientação, documentação e mapa comunitário de coleta seletiva em São Paulo." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <style>
+    :root {
+      --ink: #172117;
+      --leaf: #214c2c;
+      --moss: #3b7a49;
+      --paper: #f3ead8;
+      --cream: #fffaf1;
+      --clay: #c24e1f;
+      --gold: #c9a227;
+      --line: rgba(23, 33, 23, 0.12);
+      --shadow: 0 18px 40px rgba(23, 33, 23, 0.12);
+      --radius: 18px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: Outfit, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 500px at 10% -10%, rgba(59, 122, 73, 0.16), transparent 50%),
+        radial-gradient(900px 400px at 100% 0%, rgba(194, 78, 31, 0.12), transparent 45%),
+        var(--paper);
+      line-height: 1.55;
+    }
+    a { color: var(--leaf); }
+    img { max-width: 100%; }
+    .skip {
+      position: absolute; left: -999px; top: 0;
+    }
+    .skip:focus { left: 12px; top: 12px; background: #fff; padding: 8px 12px; z-index: 80; }
+    header {
+      position: sticky; top: 0; z-index: 40;
+      background: rgba(243, 234, 216, 0.92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      max-width: 1180px; margin: 0 auto; padding: 0.7rem 1.1rem;
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    }
+    .brand { display: flex; align-items: center; gap: 0.7rem; text-decoration: none; color: inherit; }
+    .mark {
+      width: 42px; height: 42px; border-radius: 50%;
+      background: conic-gradient(from 120deg, var(--leaf), var(--gold), var(--clay), var(--leaf));
+      display: grid; place-items: center; color: #fff; font-weight: 700;
+    }
+    .brand strong { display: block; font-family: Fraunces, serif; font-size: 1.05rem; }
+    .brand small { color: #4c5848; }
+    nav ul {
+      display: flex; flex-wrap: wrap; gap: 0.35rem 0.8rem;
+      list-style: none; margin: 0; padding: 0;
+    }
+    nav a {
+      text-decoration: none; color: var(--ink); font-size: 0.92rem; font-weight: 500;
+    }
+    nav a:hover { color: var(--leaf); }
+    .menu-btn {
+      display: none; background: var(--leaf); color: #fff; border: 0;
+      border-radius: 999px; padding: 0.45rem 0.9rem; font: inherit;
+    }
+    .wrap { max-width: 1180px; margin: 0 auto; padding: 0 1.1rem; }
+    section { padding: 4.2rem 0; scroll-margin-top: 5rem; }
+    .hero {
+      display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 2rem; align-items: center;
+      padding: 3.2rem 0 2rem;
+    }
+    .eyebrow {
+      letter-spacing: 0.12em; text-transform: uppercase; font-size: 0.75rem;
+      color: var(--clay); font-weight: 700; margin: 0 0 0.6rem;
+    }
+    h1, h2, h3 { font-family: Fraunces, serif; line-height: 1.15; margin: 0 0 0.7rem; }
+    h1 { font-size: clamp(2.1rem, 5vw, 3.6rem); }
+    h2 { font-size: clamp(1.7rem, 3vw, 2.4rem); }
+    .lead { font-size: 1.12rem; color: #314232; max-width: 40rem; }
+    .cta-row { display: flex; flex-wrap: wrap; gap: 0.7rem; margin-top: 1.4rem; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      text-decoration: none; border: 0; cursor: pointer; font: inherit; font-weight: 600;
+      border-radius: 999px; padding: 0.75rem 1.15rem;
+    }
+    .btn-primary { background: var(--leaf); color: #fff; }
+    .btn-ghost { background: transparent; color: var(--ink); border: 1px solid var(--ink); }
+    .btn-clay { background: var(--clay); color: #fff; }
+    .hero-card {
+      background: var(--cream); border-radius: var(--radius); box-shadow: var(--shadow);
+      padding: 1.3rem; border: 1px solid var(--line);
+    }
+    .hero-card address { font-style: normal; }
+    .chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 1rem; }
+    .chip {
+      background: #e7f0df; color: var(--leaf); border-radius: 999px;
+      padding: 0.25rem 0.7rem; font-size: 0.8rem; font-weight: 600;
+    }
+    .grid-3, .grid-2 { display: grid; gap: 1rem; }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-2 { grid-template-columns: 1fr 1fr; }
+    .card {
+      background: var(--cream); border: 1px solid var(--line);
+      border-radius: var(--radius); padding: 1.15rem 1.2rem;
+    }
+    .card h3 { font-size: 1.2rem; }
+    .muted { color: #4d584c; }
+    .kicker { font-size: 0.8rem; font-weight: 700; color: var(--moss); text-transform: uppercase; letter-spacing: 0.06em; }
+    .list { margin: 0; padding-left: 1.1rem; }
+    .list li { margin: 0.35rem 0; }
+    .steps { counter-reset: passo; display: grid; gap: 0.9rem; }
+    .steps article {
+      background: var(--cream); border-radius: var(--radius); padding: 1.1rem 1.2rem 1.1rem 4.2rem;
+      position: relative; border: 1px solid var(--line);
+    }
+    .steps article::before {
+      counter-increment: passo; content: counter(passo);
+      position: absolute; left: 1rem; top: 1rem;
+      width: 2.1rem; height: 2.1rem; border-radius: 50%;
+      background: var(--gold); color: var(--ink); display: grid; place-items: center; font-weight: 700;
+    }
+    .map-layout { display: grid; grid-template-columns: 320px 1fr; gap: 1rem; align-items: stretch; }
+    #mapa-leaflet { min-height: 520px; border-radius: var(--radius); border: 1px solid var(--line); }
+    .filters { display: grid; gap: 0.55rem; }
+    .filters label { font-size: 0.82rem; font-weight: 600; }
+    .filters select, input, textarea {
+      width: 100%; font: inherit; padding: 0.6rem 0.7rem;
+      border-radius: 12px; border: 1px solid var(--line); background: #fff;
+    }
+    .legend { display: flex; flex-wrap: wrap; gap: 0.5rem; font-size: 0.8rem; margin-top: 0.6rem; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+    .lista-pontos { max-height: 240px; overflow: auto; margin-top: 0.7rem; display: grid; gap: 0.45rem; }
+    .ponto-item {
+      width: 100%; text-align: left; background: #fff; border: 1px solid var(--line);
+      border-radius: 12px; padding: 0.55rem 0.7rem; cursor: pointer; font: inherit;
+    }
+    .edital { display: grid; gap: 0.35rem; }
+    .edital a { font-weight: 600; }
+    details.guia {
+      background: var(--cream); border: 1px solid var(--line);
+      border-radius: var(--radius); padding: 0.85rem 1rem;
+    }
+    details.guia + details.guia { margin-top: 0.6rem; }
+    details.guia summary { cursor: pointer; font-weight: 700; }
+    form.stack { display: grid; gap: 0.75rem; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    .notice {
+      background: #fff4e5; border-left: 4px solid var(--clay);
+      padding: 0.8rem 1rem; border-radius: 8px;
+    }
+    footer {
+      background: var(--ink); color: #e8ecd8; padding: 2.4rem 0 1.5rem;
+    }
+    footer a { color: #f0d48a; }
+    .ok { background: #e5f5e7; color: var(--leaf); padding: 0.8rem 1rem; border-radius: 12px; display: none; }
+    .leaflet-popup-content { font-family: Outfit, sans-serif; }
+    @media (max-width: 900px) {
+      .hero, .grid-3, .grid-2, .map-layout, .form-grid { grid-template-columns: 1fr; }
+      .menu-btn { display: inline-flex; }
+      nav { display: none; position: absolute; right: 1rem; top: 64px; background: var(--cream); padding: 1rem; border-radius: 16px; box-shadow: var(--shadow); }
+      nav.open { display: block; }
+      nav ul { flex-direction: column; }
+      #mapa-leaflet { min-height: 380px; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#inicio">Pular para o conteúdo</a>
+  <header>
+    <div class="nav">
+      <a class="brand" href="#inicio">
+        <span class="mark" aria-hidden="true">C</span>
+        <span>
+          <strong>Consultoria Circular</strong>
+          <small>Cultura · coleta · captação</small>
+        </span>
+      </a>
+      <button class="menu-btn" type="button" aria-expanded="false" aria-controls="menu">Menu</button>
+      <nav id="menu">
+        <ul>
+          <li><a href="#pesquisa">Pesquisa</a></li>
+          <li><a href="#sobre">Sobre</a></li>
+          <li><a href="#como-funciona">Como funciona</a></li>
+          <li><a href="#mapa">Mapa</a></li>
+          <li><a href="#editais">Editais</a></li>
+          <li><a href="#materiais">Materiais</a></li>
+          <li><a href="#consultoria">Consultoria</a></li>
+          <li><a href="#contato">Contato</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="wrap">
+      <section class="hero" id="inicio">
+        <div>
+          <p class="eyebrow">Itinerário extensionista · Cultura e Desenvolvimento · 2026</p>
+          <h1>Orientação para coletivos culturais que querem captar recurso e circular material.</h1>
+          <p class="lead">Consultoria gratuita de captação, banco de editais, guias práticos e um mapa comunitário de coleta seletiva em São Paulo — para a barreira deixar de ser só a falta de informação.</p>
+          <div class="cta-row">
+            <a class="btn btn-primary" href="#mapa">Ver mapa de coleta</a>
+            <a class="btn btn-ghost" href="#editais">Banco de editais</a>
+            <a class="btn btn-clay" href="#consultoria">Solicitar consultoria</a>
+          </div>
+          <div class="chips" aria-label="ODS relacionados">
+            <span class="chip">ODS 4 Educação</span>
+            <span class="chip">ODS 8 Trabalho decente</span>
+            <span class="chip">ODS 11 Cidades</span>
+            <span class="chip">ODS 12 Consumo responsável</span>
+            <span class="chip">ODS 17 Parcerias</span>
+          </div>
+        </div>
+        <aside class="hero-card">
+          <p class="kicker">Sede do projeto</p>
+          <h2>Universidade Cruzeiro do Sul</h2>
+          <p>Campus Paulista</p>
+          <address>
+            Av. Paulista, 1415<br />
+            Bela Vista · São Paulo/SP<br />
+            CEP 01311-925
+          </address>
+          <p class="muted">A pesquisa de campo mostrou coleta irregular, pouca divulgação da seletiva e poucos pontos acessíveis. Este site reúne o que já existe e aponta o caminho até o descarte certo.</p>
+        </aside>
+      </section>
+
+      <section id="pesquisa">
+        <p class="kicker">Documentação da pesquisa</p>
+        <h2>O que o campo mostrou em três regiões da cidade</h2>
+        <p class="lead">O problema não é ausência total de serviço. É falta de divulgação, irregularidade da coleta comum e escassez de PEVs e ecopontos. Catadores já atuam — em geral sem infraestrutura.</p>
+        <div class="grid-3" style="margin-top:1.4rem">
+          <article class="card">
+            <h3>Como a coleta funciona</h3>
+            <ul class="list">
+              <li>Coleta de lixo comum irregular, sem frequência confiável.</li>
+              <li>Coleta especializada de recicláveis existe, mas quase não é divulgada.</li>
+              <li>Catadores informais nas três regiões, com poucos pontos de descarte acessíveis.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Problemas percebidos</h3>
+            <ul class="list">
+              <li>Acúmulo e descarte irregular quando ninguém sabe o dia da coleta.</li>
+              <li>Escassez de locais limita moradores e catadores.</li>
+              <li>Ausência de projetos culturais de reaproveitamento reconhecidos.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Materiais com potencial</h3>
+            <ul class="list">
+              <li><strong>Papel</strong> — inclusive santinhos eleitorais.</li>
+              <li><strong>Plástico</strong> — garrafas, embalagens, objetos.</li>
+              <li><strong>Madeira</strong> — móveis descartados de forma inadequada.</li>
+            </ul>
+          </article>
+        </div>
+        <div class="grid-3" style="margin-top:1rem">
+          <article class="card">
+            <p class="kicker">Problemas</p>
+            <h3>O que trava o ciclo</h3>
+            <p class="muted">Irregularidade, invisibilidade da seletiva, poucos PEVs, catadores sem apoio e nenhuma ponte com a produção cultural local.</p>
+          </article>
+          <article class="card">
+            <p class="kicker">Necessidades</p>
+            <h3>O que a cidade pede</h3>
+            <p class="muted">Divulgação da seletiva, mais pontos, reconhecimento dos catadores, conscientização e conexão entre resíduo e uso criativo.</p>
+          </article>
+          <article class="card">
+            <p class="kicker">Ideias</p>
+            <h3>O que este site faz</h3>
+            <p class="muted">Mapa comunitário + critério de materiais locais nos projetos apoiados + consultoria para escrever e submeter editais.</p>
+          </article>
+        </div>
+      </section>
+    </div>
+
+    <section id="sobre" style="background:rgba(255,250,241,.55)">
+      <div class="wrap">
+        <p class="kicker">Sobre o projeto</p>
+        <h2>Mediação entre criatividade periférica e recurso institucional</h2>
+        <div class="grid-2">
+          <div>
+            <p>Associações, coletivos e produtores culturais de São Paulo enfrentam uma barreira sobretudo <strong>informacional</strong>: desconhecem editais e leis de incentivo, têm pouco domínio técnico para escrever propostas e raramente incorporam sustentabilidade como diferencial de captação.</p>
+            <p>Ao mesmo tempo, o reaproveitamento já acontece de forma informal. Cerca de <strong>90% do que é reciclado no Brasil passa pelas mãos de catadores</strong> (IPEA). Valorizar esse trabalho é justiça social e combate ao racismo ambiental.</p>
+            <p>A economia circular — manter material em uso o maior tempo possível (Ellen MacArthur, 2015) — encontra na produção cultural um palco: eventos sensibilizam público e podem comprar insumo de quem já coleta no território.</p>
+          </div>
+          <div class="card">
+            <h3>Equipe</h3>
+            <p>Ana Beatriz Mendes Gitirana da Silva, Camila Oristanio Pimenta, Davi Pereira de Aguiar Neto, Hellen Silva Trindade, Marcella Mantovani, Matheus de Oliveira Mota, Michele de Souza Maciel e Raphaela Cordeiro Dutra de Farias.</p>
+            <p class="muted">Universidade Cruzeiro do Sul · Curso de Ciências Econômicas · São Paulo, 2026.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="wrap">
+      <section id="como-funciona">
+        <p class="kicker">Como funciona</p>
+        <h2>Consultoria técnica em quatro passos</h2>
+        <div class="steps" style="margin-top:1.2rem">
+          <article>
+            <h3>Diagnóstico</h3>
+            <p>Leitura do coletivo, do território e do tipo de material que já circula (ou que poderia circular com catadores da região).</p>
+          </article>
+          <article>
+            <h3>Capacitação</h3>
+            <p>Oficina sobre editais, leis de incentivo, orçamento e como descrever reaproveitamento com clareza na proposta.</p>
+          </article>
+          <article>
+            <h3>Escrita e critério local</h3>
+            <p>Apoio na redação. Projetos que usam material obtido com catador ou cooperativa da própria região têm prioridade na fila da consultoria.</p>
+          </article>
+          <article>
+            <h3>Acompanhamento</h3>
+            <p>Pós-submissão e orientação de prestação de contas. Parceria simples coletivo–catador pode servir de evidência para o edital.</p>
+          </article>
+        </div>
+        <div class="card" style="margin-top:1rem">
+          <h3>Ficha de avaliação — materiais locais</h3>
+          <p class="muted">Origem do material · parceria com catador/cooperativa · volume estimado reaproveitado. Quem atende o critério entra na vitrine de casos.</p>
+        </div>
+      </section>
+
+      <section id="mapa">
+        <p class="kicker">Mapa comunitário</p>
+        <h2>Pontos de coleta por região</h2>
+        <p class="lead">A pesquisa ocorreu em três regiões distintas da cidade, sem nomeá-las no relatório. O mapa parte da sede na Paulista e organiza pontos <strong>oficiais e públicos</strong> em três eixos — Centro, Leste e Sul — para orientar descarte e futuras parcerias. Catadores informais de campo entram quando houver endereço publicado; use “Sugerir ponto”.</p>
+        <p class="notice">Ecopontos da Prefeitura em geral: terça a sábado, 6h–22h; domingo, 6h–18h (confirme na subprefeitura). Fonte: lista pública de Ecopontos da Prefeitura de São Paulo.</p>
+        <div class="map-layout" style="margin-top:1rem">
+          <div class="card">
+            <div class="filters">
+              <label for="filtro-regiao">Região</label>
+              <select id="filtro-regiao">
+                <option value="todas">Todas</option>
+                <option value="centro">Centro / Bela Vista</option>
+                <option value="leste">Zona Leste</option>
+                <option value="sul">Zona Sul</option>
+              </select>
+              <label for="filtro-tipo">Tipo</label>
+              <select id="filtro-tipo">
+                <option value="todos">Todos</option>
+                <option value="sede">Sede do projeto</option>
+                <option value="ecoponto">Ecoponto</option>
+                <option value="cooperativa">Cooperativa de catadores</option>
+                <option value="cultura">Ponto cultural / referência</option>
+                <option value="sugerido">Sugerido pela comunidade</option>
+              </select>
+              <label for="filtro-material">Material</label>
+              <select id="filtro-material">
+                <option value="todos">Todos</option>
+                <option value="papel">Papel</option>
+                <option value="plastico">Plástico</option>
+                <option value="madeira">Madeira</option>
+                <option value="metal">Metal</option>
+                <option value="entulho">Entulho / volumosos</option>
+                <option value="vidro">Vidro</option>
+              </select>
+              <button class="btn btn-primary" type="button" id="btn-filtrar">Filtrar mapa</button>
+            </div>
+            <p class="legend">
+              <span><i class="dot" style="background:#214c2c"></i>Sede</span>
+              <span><i class="dot" style="background:#3b7a49"></i>Ecoponto</span>
+              <span><i class="dot" style="background:#c9a227"></i>Cooperativa</span>
+              <span><i class="dot" style="background:#c24e1f"></i>Cultura</span>
+              <span><i class="dot" style="background:#5b6b8a"></i>Sugerido</span>
+            </p>
+            <div id="lista-pontos" class="lista-pontos" aria-live="polite"></div>
+            <form id="form-ponto" class="stack" style="margin-top:1rem">
+              <strong>Sugerir ponto (fica neste navegador)</strong>
+              <input name="nome" required placeholder="Nome do ponto ou catador" />
+              <input name="endereco" required placeholder="Endereço" />
+              <input name="lat" placeholder="Latitude (opcional)" />
+              <input name="lng" placeholder="Longitude (opcional)" />
+              <button class="btn btn-ghost" type="submit">Guardar sugestão</button>
+            </form>
+          </div>
+          <div id="mapa-leaflet" role="application" aria-label="Mapa de pontos de coleta em São Paulo"></div>
+        </div>
+      </section>
+
+      <section id="editais">
+        <p class="kicker">Banco de editais</p>
+        <h2>Leis e programas para começar a pesquisa</h2>
+        <div class="grid-2" style="margin-top:1rem">
+          <article class="card edital">
+            <h3>Programa VAI</h3>
+            <p>Lei nº 13.540/2003. Apoio a coletivos, com foco em jovens de baixa renda e territórios com menos equipamentos culturais.</p>
+            <a href="https://capital.sp.gov.br/web/cultura" target="_blank" rel="noopener">Secretaria Municipal de Cultura</a>
+          </article>
+          <article class="card edital">
+            <h3>Fomento à Cultura da Periferia</h3>
+            <p>Lei nº 16.496/2016. Produção, circulação e manutenção de espaços e arranjos locais (estúdios, editoras, coletivos).</p>
+            <a href="https://capital.sp.gov.br/web/cultura" target="_blank" rel="noopener">Conferir editais vigentes</a>
+          </article>
+          <article class="card edital">
+            <h3>Lei Rouanet</h3>
+            <p>Incentivo federal: pessoa física até 6% do IR; jurídica (lucro real) até 4%. Mecenato para projetos aprovados na Cultura.</p>
+            <a href="https://www.gov.br/cultura/pt-br" target="_blank" rel="noopener">Ministério da Cultura</a>
+          </article>
+          <article class="card edital">
+            <h3>Plano Municipal de Cultura · Meta 19</h3>
+            <p>Sustentabilidade, economia solidária e produção colaborativa. Na Virada Cultural 2026 houve Central de Reciclagem no Largo do Paissandu, com catadores.</p>
+            <a href="https://capital.sp.gov.br/web/cultura" target="_blank" rel="noopener">Política cultural da cidade</a>
+          </article>
+        </div>
+      </section>
+
+      <section id="materiais">
+        <p class="kicker">Educação e orientação</p>
+        <h2>Materiais de apoio</h2>
+        <details class="guia" open>
+          <summary>Como separar e entregar material</summary>
+          <p>Separe seco de orgânico. Papel limpo, plástico, metal e vidro podem ir a catador, cooperativa ou ecoponto. Madeira de móvel e entulho pequeno cabem em muitos ecopontos — não na calçada. Combine volume e dia com quem coleta no bairro: isso vira parceria, não “doação solta”.</p>
+        </details>
+        <details class="guia">
+          <summary>Como escrever um projeto cultural</summary>
+          <p>Deixe nítidos: quem faz, onde, para quem, o que muda no território, cronograma e orçamento. Cite o coletivo com nome, CNPJ ou CPF do proponente, e anexe portfólio simples (fotos, cartaz, lista de ações). Linguagem direta vale mais do que jargão.</p>
+        </details>
+        <details class="guia">
+          <summary>Como citar reaproveitamento no edital</summary>
+          <p>Descreva origem (catador/cooperativa/ecoponto da região), tipo de material, uso na cenografia, figurino ou publicação, e o que acontece depois do evento. Isso atende o critério de materiais locais da consultoria e fortalece o mérito ambiental.</p>
+        </details>
+        <details class="guia">
+          <summary>Prestação de contas (visão geral)</summary>
+          <p>Guarde notas, recibos, lista de presença, fotos e comprovante de pagamento ao catador ou cooperativa. Relato curto: o que foi prometido, o que foi feito, o que circulou de material. Sem comprovante, o edital seguinte fica mais difícil.</p>
+        </details>
+        <details class="guia">
+          <summary>Modelo de termo coletivo ↔ catador</summary>
+          <p>Nós, [coletivo], e [nome do catador/cooperativa], combinamos o fornecimento de [materiais] para o projeto [nome], no território [bairro], no período [datas], com retribuição [valor/permuta]. Este termo serve como evidência de parceria local, sem substituir contrato quando o edital exigir.</p>
+        </details>
+      </section>
+
+      <section id="casos">
+        <p class="kicker">Vitrine</p>
+        <h2>Casos apoiados</h2>
+        <article class="card">
+          <h3>Em construção</h3>
+          <p>Os primeiros projetos da consultoria-teste (semanas 8–9 do plano de trabalho) aparecerão aqui. Destaque para quem comprovar origem local do material e parceria com catador ou cooperativa.</p>
+        </article>
+      </section>
+
+      <section id="consultoria">
+        <p class="kicker">Atendimento</p>
+        <h2>Solicitar consultoria gratuita</h2>
+        <p class="lead">Preencha. O pedido abre no seu e-mail para enviar à equipe.</p>
+        <form id="form-consultoria" class="stack card" style="margin-top:1rem">
+          <div class="form-grid">
+            <label>Nome<input name="nome" required /></label>
+            <label>Coletivo / associação<input name="coletivo" required /></label>
+            <label>Região ou bairro<input name="regiao" required /></label>
+            <label>E-mail ou WhatsApp<input name="contato" required /></label>
+          </div>
+          <label>Tipo de projeto
+            <select name="tipo">
+              <option>Coleta </option>
+              <option>manutenção</option>
+              <option>Limpesa da rua</option>
+              <option>Descartes de entulho</option>
+              <option>Outro</option>
+            </select>
+          </label>
+          <label>Já usa material reaproveitado?
+            <select name="reuso">
+              <option>Ainda não</option>
+              <option>Sim, de forma informal</option>
+              <option>Sim, com catador ou cooperativa</option>
+            </select>
+          </label>
+          <label>Mensagem<textarea name="mensagem" rows="4" placeholder="O que você precisa: edital, orçamento, parceria de coleta..."></textarea></label>
+          <button class="btn btn-primary" type="submit">Montar pedido</button>
+          <p class="ok" id="ok-consultoria">Pedido montado. Se o e-mail não abrir, copie os dados da tela e envie à equipe do Campus Paulista.</p>
+        </form>
+      </section>
+    </div>
+  </main>
+
+  <footer id="contato">
+    <div class="wrap">
+      <h2>Contato e créditos</h2>
+      <p>Universidade Cruzeiro do Sul · Campus Paulista · Av. Paulista, 1415 · Bela Vista · São Paulo/SP · CEP 01311-925</p>
+      <p>Projeto extensionista de consultoria em captação com recorte de economia circular.</p>
+      <p class="muted">Referências de apoio: Villaça (2011); IPEA sobre catadores; Fundação Ellen MacArthur (2015); Howkins (2001); Leite (2014); Chamone (2016); Borges (2023); Prefeitura de SP (Ecopontos e cultura); Censo IBGE 2022.</p>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script>
+    const EMAIL_EQUIPE = "equipe@cs.cscruzeirodosul.edu.br"; // coloque o e-mail da consultoria, se houver
+    const SEDE = [-23.5598819, -46.658073];
+
+    const PONTOS = [
+      {
+        id: "sede",
+        nome: "Sede — Universidade Cruzeiro do Sul, Campus Paulista",
+        tipo: "sede",
+        regiao: "centro",
+        lat: -23.5598819,
+        lng: -46.658073,
+        materiais: ["papel", "plastico", "madeira"],
+        horario: "Atendimento acadêmico do projeto",
+        endereco: "Av. Paulista, 1415, Bela Vista, São Paulo/SP, CEP 01311-925",
+        contato: "",
+        fonte: "Endereço oficial do campus"
+      },
+      {
+        id: "coopamare",
+        nome: "Coopamare — cooperativa de catadores",
+        tipo: "cooperativa",
+        regiao: "centro",
+        lat: -23.5548406,
+        lng: -46.6812023,
+        materiais: ["papel", "plastico", "vidro", "metal"],
+        horario: "Confirmar no local",
+        endereco: "Rua Galeno de Almeida, 659, Pinheiros (sob o Viaduto Paulo VI)",
+        contato: "(11) 3064-3976",
+        fonte: "Endereço público da cooperativa",
+        parceiro: true
+      },
+      {
+        id: "paissandu",
+        nome: "Largo do Paissandu — referência da Central de Reciclagem da Virada Cultural 2026",
+        tipo: "cultura",
+        regiao: "centro",
+        lat: -23.5430259,
+        lng: -46.6381925,
+        materiais: ["papel", "plastico", "metal"],
+        horario: "Pontual, em eventos",
+        endereco: "Largo do Paissandu, República, São Paulo",
+        contato: "",
+        fonte: "Pesquisa: Virada Cultural 2026"
+      },
+      {
+        id: "eco-santa-cruz",
+        nome: "Ecoponto Santa Cruz",
+        tipo: "ecoponto",
+        regiao: "centro",
+        lat: -23.5969317,
+        lng: -46.6319111,
+        materiais: ["entulho", "madeira", "papel", "plastico", "metal"],
+        horario: "Ter–sáb 6h–22h · Dom 6h–18h (confirmar)",
+        endereco: "Rua Santa Cruz, 1452 (baixo do Viaduto Santa Cruz), Vila Mariana",
+        contato: "",
+        fonte: "Prefeitura de São Paulo"
+      },
+      {
+        id: "eco-taylor",
+        nome: "Ecoponto Comandante Taylor",
+        tipo: "ecoponto",
+        regiao: "centro",
+        lat: -23.600172,
+        lng: -46.6010847,
+        materiais: ["entulho", "madeira", "papel", "plastico", "metal"],
+        horario: "Ter–sáb 6h–22h · Dom 6h–18h (confirmar)",
+        endereco: "Rua Comandante Taylor, 690 (baixo do viaduto), Ipiranga",
+        contato: "",
+        fonte: "Prefeitura de São Paulo"
+      },
+      {
+        id: "eco-guarani",
+        nome: "Ecoponto Parque Guarani",
+        tipo: "ecoponto",
+        regiao: "leste",
+        lat: -23.5202836,
+        lng: -46.4636235,
+        materiais: ["entulho", "madeira", "papel", "plastico", "metal"],
+        horario: "Ter–sáb 6h–22h · Dom 6h–18h (confirmar)",
+        endereco: "Rua Manuel Alves da Rocha, 584, Parque Guarani, Itaquera",
+        contato: "",
+        fonte: "Prefeitura de São Paulo"
+      },
+      {
+        id: "eco-carmo",
+        nome: "Ecoponto Parque do Carmo",
+        tipo: "ecoponto",
+        regiao: "leste",
+        lat: -23.5786771,
+        lng: -46.4841818,
+        materiais: ["entulho", "madeira", "papel", "plastico", "metal"],
+        horario: "Ter–sáb 6h–22h · Dom 6h–18h (confirmar)",
+        endereco: "Rua Machado Nunes, 95, Jardim Nossa Senhora do Carmo",
+        contato: "",
+        fonte: "Prefeitura de São Paulo"
+      },
+      {
+        id: "eco-valle",
+        nome: "Ecoponto Oswaldo Valle Cordeiro",
+        tipo: "ecoponto",
+        regiao: "leste",
+        lat: -23.5606752,
+        lng: -46.4836135,
+        materiais: ["entulho", "madeira", "papel", "plastico", "metal", "gesso"],
+        horario: "Ter–sáb 6h–22h · Dom 6h–18h (confirmar)",
+        endereco: "Av. Osvaldo Valle Cordeiro, 405, Jardim Brasília (Zona Leste)",
+        contato: "",
+        fonte: "Prefeitura de São Paulo"
+      },
+      {
+        id: "eco-paraisopolis",
+        nome: "Ecoponto Paraisópolis",
+        tipo: "ecoponto",
+        regiao: "sul",
+        lat: -23.6225259,
+        lng: -46.7250662,
+        materiais: ["entulho", "madeira", "papel", "plastico", "metal"],
+        horario: "Ter–sáb 6h–22h · Dom 6h–18h (confirmar)",
+        endereco: "Rua Irapará, 73, Paraíso do Morumbi / Paraisópolis",
+        contato: "",
+        fonte: "Prefeitura de São Paulo"
+      },
+      {
+        id: "eco-santo-dias",
+        nome: "Ecoponto Santo Dias",
+        tipo: "ecoponto",
+        regiao: "sul",
+        lat: -23.6647123,
+        lng: -46.7746298,
+        materiais: ["entulho", "madeira", "papel", "plastico", "metal"],
+        horario: "Ter–sáb 6h–22h · Dom 6h–18h (confirmar)",
+        endereco: "Travessa Rosifloras, 301, Capão Redondo",
+        contato: "",
+        fonte: "Prefeitura de São Paulo"
+      },
+      {
+        id: "eco-jabaquara",
+        nome: "Ecoponto Jabaquara",
+        tipo: "ecoponto",
+        regiao: "sul",
+        lat: -23.6536383,
+        lng: -46.6502123,
+        materiais: ["entulho", "madeira", "papel", "plastico", "metal", "gesso"],
+        horario: "Ter–sáb 6h–22h · Dom 6h–18h (confirmar)",
+        endereco: "Rua Jupatis, 140, Vila Mira, Jabaquara",
+        contato: "",
+        fonte: "Prefeitura de São Paulo"
+      }
+    ];
+
+    const cores = {
+      sede: "#214c2c",
+      ecoponto: "#3b7a49",
+      cooperativa: "#c9a227",
+      cultura: "#c24e1f",
+      sugerido: "#5b6b8a"
+    };
+
+    const menuBtn = document.querySelector(".menu-btn");
+    const menu = document.getElementById("menu");
+    menuBtn.addEventListener("click", () => {
+      const open = menu.classList.toggle("open");
+      menuBtn.setAttribute("aria-expanded", String(open));
+    });
+    menu.querySelectorAll("a").forEach((a) => a.addEventListener("click", () => {
+      menu.classList.remove("open");
+      menuBtn.setAttribute("aria-expanded", "false");
+    }));
+
+    const sugeridos = JSON.parse(localStorage.getItem("pontosSugeridos") || "[]");
+    const mapa = L.map("mapa-leaflet").setView(SEDE, 12);
+    
+    // CORREÇÃO DEFINITIVA APLICADA: Utilização da camada Wikimedia Maps (sem exigência de chave de API)
+    L.tileLayer("https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}{r}.png", {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors & Wikimedia'
+    }).addTo(mapa);
+
+    const camada = L.layerGroup().addTo(mapa);
+    const marcadores = [];
+
+    function icone(tipo) {
+      return L.divIcon({
+        className: "",
+        html: `<span style="display:block;width:16px;height:16px;border-radius:50%;background:${cores[tipo] || "#214c2c"};border:2px solid #fff;box-shadow:0 0 0 2px ${cores[tipo] || "#214c2c"}"></span>`,
+        iconSize: [16, 16],
+        iconAnchor: [8, 8]
+      });
+    }
+
+    function todosPontos() {
+      return PONTOS.concat(sugeridos);
+    }
+
+    function filtrados() {
+      const r = document.getElementById("filtro-regiao").value;
+      const t = document.getElementById("filtro-tipo").value;
+      const m = document.getElementById("filtro-material").value;
+      return todosPontos().filter((p) => {
+        if (r !== "todas" && p.regiao !== r) return false;
+        if (t !== "todos" && p.tipo !== t) return false;
+        if (m !== "todos" && !(p.materiais || []).includes(m)) return false;
+        return true;
+      });
+    }
+
+    function popupHtml(p) {
+      const selo = p.parceiro ? "<p><strong>Selo: parceiro do projeto</strong></p>" : "";
+      return `<strong>${p.nome}</strong>
+        <p>${p.endereco || ""}</p>
+        <p>${(p.materiais || []).join(", ")}</p>
+        <p>${p.horario || ""}</p>
+        <p>${p.contato || ""}</p>
+        <p><small>${p.fonte || ""}</small></p>${selo}`;
+    }
+
+    function renderMapa() {
+      camada.clearLayers();
+      marcadores.length = 0;
+      const lista = document.getElementById("lista-pontos");
+      lista.innerHTML = "";
+      const pts = filtrados();
+      pts.forEach((p) => {
+        const mk = L.marker([p.lat, p.lng], { icon: icone(p.tipo) }).addTo(camada);
+        mk.bindPopup(popupHtml(p));
+        marcadores.push({ ponto: p, marker: mk });
+        const b = document.createElement("button");
+        b.className = "ponto-item";
+        b.type = "button";
+        b.textContent = p.nome;
+        b.addEventListener("click", () => {
+          mapa.setView([p.lat, p.lng], 16);
+          mk.openPopup();
+        });
+        lista.appendChild(b);
+      });
+      if (!pts.length) {
+        lista.innerHTML = "<p class='muted'>Nenhum ponto com esse filtro.</p>";
+      }
+    }
+
+    document.getElementById("btn-filtrar").addEventListener("click", renderMapa);
+    ["filtro-regiao", "filtro-tipo", "filtro-material"].forEach((id) => {
+      document.getElementById(id).addEventListener("change", renderMapa);
+    });
+    renderMapa();
+    function ajustarMapa() { mapa.invalidateSize(); }
+    setTimeout(ajustarMapa, 300);
+    window.addEventListener("resize", ajustarMapa);
+    document.querySelectorAll('a[href="#mapa"]').forEach((a) => {
+      a.addEventListener("click", () => setTimeout(ajustarMapa, 400));
+    });
+
+    document.getElementById("form-ponto").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const lat = parseFloat(fd.get("lat")) || SEDE[0] + (Math.random() - 0.5) * 0.02;
+      const lng = parseFloat(fd.get("lng")) || SEDE[1] + (Math.random() - 0.5) * 0.02;
+      sugeridos.push({
+        id: "sug-" + Date.now(),
+        nome: fd.get("nome"),
+        tipo: "sugerido",
+        regiao: "centro",
+        lat, lng,
+        materiais: ["papel", "plastico"],
+        horario: "A confirmar",
+        endereco: fd.get("endereco"),
+        fonte: "Sugestão local (neste navegador)"
+      });
+      localStorage.setItem("pontosSugeridos", JSON.stringify(sugeridos));
+      e.target.reset();
+      renderMapa();
+    });
+
+    document.getElementById("form-consultoria").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const corpo = [
+        "Pedido de consultoria circular",
+        "Nome: " + fd.get("nome"),
+        "Coletivo: " + fd.get("coletivo"),
+        "Região: " + fd.get("regiao"),
+        "Contato: " + fd.get("contato"),
+        "Tipo: " + fd.get("tipo"),
+        "Reuso: " + fd.get("reuso"),
+        "Mensagem: " + fd.get("mensagem")
+      ].join("\n");
+      const destino = EMAIL_EQUIPE || "equipe@cs.cscruzeirodosul.edu.br";
+      const url = "mailto:" + destino + "?subject=" + encodeURIComponent("Consultoria Circular — " + fd.get("coletivo")) + "&body=" + encodeURIComponent(corpo);
+      window.location.href = url;
+      const ok = document.getElementById("ok-consultoria");
+      ok.style.display = "block";
+    });
+  </script>
+</body>
+</html>
